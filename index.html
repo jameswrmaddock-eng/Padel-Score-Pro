@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Padel Score Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --clay: #C4601A;
+    --clay-dark: #9E4A0F;
+    --clay-light: #E8895A;
+    --sand: #F5EDD8;
+    --sand-dark: #E8D9BA;
+    --court-green: #2D6A4F;
+    --court-green-light: #52B788;
+    --ink: #1A1208;
+    --white: #FEFAF2;
+    --score-gold: #D4A017;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--sand);
+    min-height: 100vh;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* Court texture background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(180,130,80,0.12) 39px, rgba(180,130,80,0.12) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(180,130,80,0.12) 39px, rgba(180,130,80,0.12) 40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 24px 0 32px;
+  }
+
+  .header-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--clay);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 3px;
+    color: var(--clay-dark);
+    line-height: 1;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: var(--clay);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-top: 6px;
+  }
+
+  /* Setup screen */
+  #setup-screen {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 8px 40px rgba(100,50,10,0.12), inset 0 1px 0 rgba(255,255,255,0.8);
+    border: 1px solid rgba(196,96,26,0.15);
+  }
+
+  #setup-screen h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--clay-dark);
+    margin-bottom: 24px;
+  }
+
+  .setup-pair {
+    margin-bottom: 24px;
+  }
+
+  .setup-pair-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--clay);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .setup-pair-label::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .team1-label::before { background: var(--clay); }
+  .team2-label::before { background: var(--court-green); }
+
+  .player-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--sand-dark);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: var(--sand);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--clay);
+    box-shadow: 0 0 0 3px rgba(196,96,26,0.1);
+  }
+
+  .sets-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+    padding: 16px 18px;
+    background: var(--sand);
+    border-radius: 12px;
+  }
+
+  .sets-row label {
+    font-size: 13px;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .sets-toggle {
+    display: flex;
+    background: var(--sand-dark);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .sets-toggle button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: #888;
+    transition: all 0.2s;
+  }
+
+  .sets-toggle button.active {
+    background: var(--white);
+    color: var(--clay-dark);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  }
+
+  /* Deuce mode selector */
+  .deuce-row {
+    margin-bottom: 28px;
+    padding: 16px 18px;
+    background: var(--sand);
+    border-radius: 12px;
+  }
+
+  .deuce-row-label {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  .deuce-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .deuce-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1.5px solid var(--sand-dark);
+    cursor: pointer;
+    transition: all 0.18s;
+    background: var(--white);
+    text-align: left;
+  }
+
+  .deuce-option:hover { border-color: var(--clay-light); }
+
+  .deuce-option.active {
+    border-color: var(--clay);
+    background: rgba(196,96,26,0.06);
+  }
+
+  .deuce-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--sand-dark);
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.18s;
+    position: relative;
+  }
+
+  .deuce-option.active .deuce-radio {
+    border-color: var(--clay);
+    background: var(--clay);
+    box-shadow: inset 0 0 0 3px var(--white);
+  }
+
+  .deuce-text strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 1px;
+  }
+
+  .deuce-text span {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+  }
+
+  /* Golden point banner */
+  .golden-banner {
+    text-align: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--score-gold), #e8b84b);
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    display: none;
+  }
+  .golden-banner.visible { display: block; }
+
+  .start-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--clay);
+    color: var(--white);
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(196,96,26,0.3);
+  }
+
+  .start-btn:hover {
+    background: var(--clay-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(196,96,26,0.4);
+  }
+
+  .start-btn:active { transform: translateY(0); }
+
+  /* Game screen */
+  #game-screen { display: none; }
+
+  /* Sets indicator */
+  .sets-bar {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .set-pip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--sand-dark);
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+
+  .set-pip.active {
+    background: var(--clay);
+    color: var(--white);
+    box-shadow: 0 2px 8px rgba(196,96,26,0.3);
+  }
+
+  .set-pip.won-t1 { background: var(--clay); color: white; }
+  .set-pip.won-t2 { background: var(--court-green); color: white; }
+
+  /* Score card */
+  .score-card {
+    background: var(--white);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(100,50,10,0.15), inset 0 1px 0 rgba(255,255,255,0.9);
+    border: 1px solid rgba(196,96,26,0.1);
+    margin-bottom: 16px;
+  }
+
+  .score-header {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    background: var(--ink);
+    padding: 16px 20px;
+    align-items: center;
+  }
+
+  .team-name-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    line-height: 1.2;
+  }
+
+  .team1-name { color: var(--clay-light); text-align: left; }
+  .team2-name { color: var(--court-green-light); text-align: right; }
+
+  .vs-badge {
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* Sets score row */
+  .sets-score-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    padding: 10px 24px;
+    background: rgba(26,18,8,0.04);
+    border-bottom: 1px solid var(--sand-dark);
+    align-items: center;
+  }
+
+  .sets-won {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--clay);
+  }
+
+  .sets-won.right { text-align: right; color: var(--court-green); }
+
+  .sets-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #999;
+    text-align: center;
+  }
+
+  /* Main score */
+  .main-score {
+    display: grid;
+    grid-template-columns: 1fr 2px 1fr;
+    gap: 0;
+  }
+
+  .team-score-panel {
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .team-score-panel:active { background: rgba(0,0,0,0.03); }
+
+  .team-score-panel::after {
+    content: 'TAP TO SCORE';
+    position: absolute;
+    bottom: 10px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #ccc;
+    font-weight: 600;
+  }
+
+  .score-divider {
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--sand-dark) 20%, var(--sand-dark) 80%, transparent);
+    align-self: stretch;
+  }
+
+  .points-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 80px;
+    line-height: 1;
+    color: var(--ink);
+    transition: transform 0.15s, color 0.15s;
+  }
+
+  .points-display.scored {
+    transform: scale(1.15);
+    color: var(--clay);
+    animation: scoreFlash 0.4s ease-out;
+  }
+
+  @keyframes scoreFlash {
+    0% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  .games-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .game-bubble {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--sand-dark);
+    color: #777;
+    transition: all 0.3s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .game-bubble.won-t1 { background: var(--clay); color: white; }
+  .game-bubble.won-t2 { background: var(--court-green); color: white; }
+
+  /* Serving indicator */
+  .serve-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--score-gold);
+    box-shadow: 0 0 8px rgba(212,160,23,0.6);
+    opacity: 0;
+    transition: opacity 0.3s;
+    flex-shrink: 0;
+  }
+
+  .serve-indicator.active { opacity: 1; }
+
+  .team-serve-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 16px;
+  }
+
+  /* Deuce / advantage label */
+  .game-status-label {
+    text-align: center;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--clay);
+    background: rgba(196,96,26,0.07);
+    display: none;
+  }
+
+  /* Action buttons */
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 13px;
+    border: 1.5px solid var(--sand-dark);
+    border-radius: 12px;
+    background: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .action-btn:hover { border-color: var(--clay-light); background: var(--sand); }
+  .action-btn.danger:hover { border-color: #e74c3c; color: #e74c3c; }
+
+  .undo-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Match history log */
+  .history-section {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(100,50,10,0.08);
+    border: 1px solid rgba(196,96,26,0.1);
+    margin-bottom: 16px;
+  }
+
+  .history-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--clay);
+    margin-bottom: 14px;
+  }
+
+  .history-list {
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .history-item .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .history-item.t1 .dot { background: var(--clay); }
+  .history-item.t2 .dot { background: var(--court-green); }
+  .history-item .hi-score { font-weight: 600; color: #888; font-size: 11px; margin-left: auto; }
+
+  /* Match won overlay */
+  #winner-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,8,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(6px);
+  }
+
+  #winner-screen.visible { display: flex; }
+
+  .winner-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 40px 32px;
+    text-align: center;
+    max-width: 360px;
+    width: 100%;
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .winner-trophy { font-size: 60px; margin-bottom: 16px; }
+  .winner-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--clay);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .winner-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    color: var(--ink);
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+
+  .final-score-display {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+
+  .final-set-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .new-match-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--clay);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+
+  .new-match-btn:hover { background: var(--clay-dark); }
+
+  .same-players-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--clay);
+    border: 1.5px solid var(--clay-light);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .same-players-btn:hover { background: rgba(196,96,26,0.06); }
+
+  /* Tiebreak label */
+  .tiebreak-banner {
+    text-align: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--clay), var(--score-gold));
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    display: none;
+  }
+
+  .tiebreak-banner.visible { display: block; }
+
+  /* Responsive */
+  @media (max-width: 400px) {
+    .points-display { font-size: 64px; }
+    .team-score-panel { padding: 24px 16px; }
+    .player-inputs { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-logo">
+      <div class="logo-icon">🎾</div>
+    </div>
+    <h1>PADEL SCORE</h1>
+    <p>Match Tracker</p>
+  </div>
+
+  <!-- SETUP -->
+  <div id="setup-screen">
+    <h2>NEW MATCH</h2>
+
+    <div class="setup-pair">
+      <div class="setup-pair-label team1-label">Team 1</div>
+      <div class="player-inputs">
+        <input type="text" id="t1p1" placeholder="Player 1" value="Alex">
+        <input type="text" id="t1p2" placeholder="Player 2" value="Sam">
+      </div>
+    </div>
+
+    <div class="setup-pair">
+      <div class="setup-pair-label team2-label">Team 2</div>
+      <div class="player-inputs">
+        <input type="text" id="t2p1" placeholder="Player 3" value="Jordan">
+        <input type="text" id="t2p2" placeholder="Player 4" value="Chris">
+      </div>
+    </div>
+
+    <div class="sets-row">
+      <label>Match Format</label>
+      <div class="sets-toggle">
+        <button class="sets-btn" data-sets="1">1 Set</button>
+        <button class="sets-btn active" data-sets="3">Best of 3</button>
+      </div>
+    </div>
+
+    <div class="deuce-row">
+      <div class="deuce-row-label">Deuce Rule</div>
+      <div class="deuce-options">
+        <button class="deuce-option active" data-deuce="long" onclick="selectDeuce(this)">
+          <div class="deuce-radio"></div>
+          <div class="deuce-text">
+            <strong>Long Deuce</strong>
+            <span>Classic rules — deuce repeats until one team leads by 2 points</span>
+          </div>
+        </button>
+        <button class="deuce-option" data-deuce="silver" onclick="selectDeuce(this)">
+          <div class="deuce-radio"></div>
+          <div class="deuce-text">
+            <strong>Silver Point</strong>
+            <span>One deuce allowed — then a single golden point decides the game</span>
+          </div>
+        </button>
+        <button class="deuce-option" data-deuce="golden" onclick="selectDeuce(this)">
+          <div class="deuce-radio"></div>
+          <div class="deuce-text">
+            <strong>Golden Point</strong>
+            <span>No deuce — one sudden-death point at 40–40 decides immediately</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <button class="start-btn" onclick="startMatch()">START MATCH</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen">
+
+    <div class="sets-bar" id="sets-bar"></div>
+
+    <div class="score-card">
+      <div class="score-header">
+        <div class="team-name-display team1-name" id="t1-header"></div>
+        <div class="vs-badge">VS</div>
+        <div class="team-name-display team2-name" id="t2-header"></div>
+      </div>
+
+      <div class="sets-score-row">
+        <div class="sets-won" id="t1-sets-won">0 Sets</div>
+        <div class="sets-label">Sets</div>
+        <div class="sets-won right" id="t2-sets-won">0 Sets</div>
+      </div>
+
+      <div class="tiebreak-banner" id="tiebreak-banner">⚡ TIEBREAK</div>
+      <div class="golden-banner" id="golden-banner">✦ GOLDEN POINT</div>
+      <div class="game-status-label" id="game-status-label"></div>
+
+      <div class="main-score">
+        <div class="team-score-panel" id="panel-t1" onclick="scorePoint(1)">
+          <div class="team-serve-row">
+            <div class="serve-indicator" id="serve-t1"></div>
+          </div>
+          <div class="points-display" id="pts-t1">0</div>
+          <div class="games-row" id="games-t1"></div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="team-score-panel" id="panel-t2" onclick="scorePoint(2)">
+          <div class="team-serve-row" style="justify-content:flex-end">
+            <div class="serve-indicator" id="serve-t2"></div>
+          </div>
+          <div class="points-display" id="pts-t2">0</div>
+          <div class="games-row" id="games-t2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn undo-btn" id="undo-btn" onclick="undoPoint()">↩ Undo</button>
+      <button class="action-btn" onclick="toggleServe()">🎯 Swap Serve</button>
+      <button class="action-btn danger" onclick="confirmNewMatch()">✕ End</button>
+    </div>
+
+    <div class="history-section">
+      <div class="history-title">📋 Match Log</div>
+      <div class="history-list" id="history-list">
+        <div style="font-size:13px;color:#aaa;text-align:center;padding:8px">No points yet — start playing!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WINNER SCREEN -->
+<div id="winner-screen">
+  <div class="winner-card">
+    <div class="winner-trophy">🏆</div>
+    <div class="winner-label">Match Winner</div>
+    <div class="winner-name" id="winner-name"></div>
+    <div class="final-score-display" id="final-score-display"></div>
+    <button class="new-match-btn" onclick="resetAll()">NEW MATCH</button>
+    <button class="same-players-btn" onclick="resetSamePlayers()">Same Players, New Match</button>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+const POINTS = ['0','15','30','40'];
+
+let state = {};
+let history = [];
+
+function initState(maxSets, deuceMode, t1name, t2name) {
+  state = {
+    maxSets,
+    deuceMode,   // 'long' | 'silver' | 'golden'
+    t1name, t2name,
+    setsWon: [0, 0],
+    setScores: [],
+    currentSet: { t1: 0, t2: 0 },
+    points: [0, 0],
+    serving: 1,
+    isTiebreak: false,
+    isDeuce: false,
+    deuceCount: 0,   // how many times deuce has been reached this game (for silver point)
+    isGoldenPoint: false,  // true when the next point is sudden death
+    matchOver: false,
+  };
+  history = [];
+}
+
+// ── Deuce selector ───────────────────────────────────────────────────────
+let selectedDeuce = 'long';
+function selectDeuce(el) {
+  document.querySelectorAll('.deuce-option').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedDeuce = el.dataset.deuce;
+}
+
+// ── Sets toggle ─────────────────────────────────────────────────────────
+let selectedSets = 3;
+document.querySelectorAll('.sets-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sets-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedSets = parseInt(btn.dataset.sets);
+  });
+});
+
+// ── Start match ──────────────────────────────────────────────────────────
+function startMatch() {
+  const t1p1 = document.getElementById('t1p1').value.trim() || 'Team 1';
+  const t1p2 = document.getElementById('t1p2').value.trim() || '';
+  const t2p1 = document.getElementById('t2p1').value.trim() || 'Team 2';
+  const t2p2 = document.getElementById('t2p2').value.trim() || '';
+
+  const t1name = t1p2 ? `${t1p1} & ${t1p2}` : t1p1;
+  const t2name = t2p2 ? `${t2p1} & ${t2p2}` : t2p1;
+
+  initState(selectedSets, selectedDeuce, t1name, t2name);
+
+  document.getElementById('t1-header').textContent = t1name;
+  document.getElementById('t2-header').textContent = t2name;
+
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+
+  render();
+}
+
+// ── Score a point ────────────────────────────────────────────────────────
+function scorePoint(team) {
+  if (state.matchOver) return;
+
+  // snapshot for undo
+  history.push(JSON.parse(JSON.stringify(state)));
+
+  const t = team - 1;
+  const opp = 1 - t;
+
+  if (state.isTiebreak) {
+    scoreTiebreakPoint(t, opp);
+  } else {
+    scoreRegularPoint(t, opp);
+  }
+
+  // flash animation
+  const el = document.getElementById(`pts-t${team}`);
+  el.classList.remove('scored');
+  void el.offsetWidth;
+  el.classList.add('scored');
+  setTimeout(() => el.classList.remove('scored'), 400);
+
+  addHistoryEntry(team);
+  document.getElementById('undo-btn').disabled = false;
+  render();
+}
+
+function scoreRegularPoint(t, opp) {
+  const pts = state.points;
+
+  // ── GOLDEN POINT (sudden death) ──────────────────────────────────────
+  // Applies to: golden mode always at 40-40, or silver mode after advantage lost
+  if (state.isGoldenPoint) {
+    winGame(t);
+    return;
+  }
+
+  // ── ADVANTAGE phase (long deuce & first deuce in silver) ─────────────
+  if (state.isDeuce) {
+    if (pts[t] === 4) {
+      // scorer had advantage → win game
+      winGame(t);
+    } else {
+      // pts[opp] === 4: opponent had advantage, scorer wins this point
+      // → advantage is lost
+      if (state.deuceMode === 'silver') {
+        // Silver: after advantage is lost, it becomes a golden point
+        pts[0] = 3; pts[1] = 3;
+        state.isDeuce = false;
+        state.isGoldenPoint = true;
+      } else {
+        // Long deuce: back to 40-40, no advantage
+        pts[0] = 3; pts[1] = 3;
+      }
+    }
+    return;
+  }
+
+  // ── NORMAL SCORING (below 40-40) ─────────────────────────────────────
+  if (pts[t] < 3) {
+    pts[t]++;
+    return;
+  }
+
+  // scorer is at 40
+  if (pts[opp] < 3) {
+    // opponent not yet at 40 → win game outright
+    winGame(t);
+    return;
+  }
+
+  // Both at 40 — apply deuce rule
+  if (state.deuceMode === 'golden') {
+    // Golden point: the team that got here wins immediately — no flag, no banner
+    winGame(t);
+
+  } else if (state.deuceMode === 'silver') {
+    // Silver: first 40-40 gives advantage to the scorer
+    state.isDeuce = true;
+    pts[t] = 4;
+
+  } else {
+    // Long deuce: give advantage to scorer
+    state.isDeuce = true;
+    pts[t] = 4;
+  }
+}
+
+function scoreTiebreakPoint(t, opp) {
+  state.points[t]++;
+  const p = state.points;
+  const target = state.maxSets === 1 ? 7 : 7;
+  if (p[t] >= target && p[t] - p[opp] >= 2) {
+    winGame(t);
+  }
+}
+
+function winGame(t) {
+  state.points = [0, 0];
+  state.isDeuce = false;
+  state.isGoldenPoint = false;
+  state.deuceCount = 0;
+  state.isTiebreak = false;
+  state.currentSet[t === 0 ? 't1' : 't2']++;
+
+  // swap serve after each game
+  state.serving = state.serving === 1 ? 2 : 1;
+
+  checkSetWin(t);
+}
+
+function checkSetWin(t) {
+  const cs = state.currentSet;
+  const g1 = cs.t1, g2 = cs.t2;
+  const winner = t === 0 ? 'T1' : 'T2';
+
+  // standard set: first to 6 with 2 clear, or 7-5, or tiebreak at 6-6
+  let setWon = false;
+
+  if (t === 0) {
+    if ((g1 >= 6 && g1 - g2 >= 2) || g1 === 7) setWon = true;
+    if (g1 === 6 && g2 === 6) { startTiebreak(); return; }
+  } else {
+    if ((g2 >= 6 && g2 - g1 >= 2) || g2 === 7) setWon = true;
+    if (g1 === 6 && g2 === 6) { startTiebreak(); return; }
+  }
+
+  if (setWon) {
+    state.setScores.push({ t1: g1, t2: g2 });
+    state.setsWon[t]++;
+    state.currentSet = { t1: 0, t2: 0 };
+
+    const setsNeeded = Math.ceil(state.maxSets / 2);
+    if (state.setsWon[t] >= setsNeeded) {
+      state.matchOver = true;
+      showWinner(t);
+    }
+  }
+}
+
+function startTiebreak() {
+  state.isTiebreak = true;
+  state.points = [0, 0];
+}
+
+// ── Undo ─────────────────────────────────────────────────────────────────
+function undoPoint() {
+  if (history.length === 0) return;
+  state = history.pop();
+  document.getElementById('undo-btn').disabled = history.length === 0;
+  render();
+}
+
+// ── Toggle serve ─────────────────────────────────────────────────────────
+function toggleServe() {
+  state.serving = state.serving === 1 ? 2 : 1;
+  render();
+}
+
+// ── History log ──────────────────────────────────────────────────────────
+function addHistoryEntry(team) {
+  const list = document.getElementById('history-list');
+  const placeholder = list.querySelector('div[style]');
+  if (placeholder) placeholder.remove();
+
+  const item = document.createElement('div');
+  item.className = `history-item t${team}`;
+  const teamName = team === 1 ? state.t1name : state.t2name;
+  const scoreStr = `${state.currentSet.t1}-${state.currentSet.t2}`;
+  item.innerHTML = `
+    <div class="dot"></div>
+    <span>Point → <strong>${teamName.split(' ')[0]}</strong></span>
+    <span class="hi-score">Games ${scoreStr}</span>
+  `;
+  list.insertBefore(item, list.firstChild);
+}
+
+// ── Render ───────────────────────────────────────────────────────────────
+function render() {
+  const pts = state.points;
+  const cs = state.currentSet;
+
+  // Points display
+  if (state.isTiebreak) {
+    document.getElementById('pts-t1').textContent = pts[0];
+    document.getElementById('pts-t2').textContent = pts[1];
+  } else if (state.isGoldenPoint) {
+    // Both showing 40 during golden point — banner makes the situation clear
+    document.getElementById('pts-t1').textContent = '40';
+    document.getElementById('pts-t2').textContent = '40';
+  } else {
+    document.getElementById('pts-t1').textContent = pts[0] === 4 ? 'AD' : POINTS[pts[0]];
+    document.getElementById('pts-t2').textContent = pts[1] === 4 ? 'AD' : POINTS[pts[1]];
+  }
+
+  // Status label & golden banner
+  const statusEl = document.getElementById('game-status-label');
+  const goldenBanner = document.getElementById('golden-banner');
+  goldenBanner.classList.toggle('visible', !!state.isGoldenPoint);
+
+  if (state.isGoldenPoint) {
+    statusEl.style.display = 'none';
+  } else if (state.isDeuce && (pts[0] === 4 || pts[1] === 4)) {
+    // Advantage shown — only in long deuce or silver's first deuce
+    statusEl.textContent = pts[0] === 4
+      ? `ADVANTAGE ${state.t1name.split(' ')[0].toUpperCase()}`
+      : `ADVANTAGE ${state.t2name.split(' ')[0].toUpperCase()}`;
+    statusEl.style.display = 'block';
+  } else if (state.isDeuce && pts[0] === 3 && pts[1] === 3) {
+    // Back to 40-40 after lost advantage (long deuce only — silver goes straight to golden)
+    statusEl.textContent = 'DEUCE';
+    statusEl.style.display = 'block';
+  } else {
+    statusEl.style.display = 'none';
+  }
+
+  // Tiebreak banner
+  const tbBanner = document.getElementById('tiebreak-banner');
+  tbBanner.classList.toggle('visible', state.isTiebreak);
+
+  // Games bubbles
+  renderGames('games-t1', cs.t1, cs.t2, 1);
+  renderGames('games-t2', cs.t2, cs.t1, 2);
+
+  // Sets won
+  document.getElementById('t1-sets-won').textContent = `${state.setsWon[0]} ${state.setsWon[0] === 1 ? 'Set' : 'Sets'}`;
+  document.getElementById('t2-sets-won').textContent = `${state.setsWon[1]} ${state.setsWon[1] === 1 ? 'Set' : 'Sets'}`;
+
+  // Sets bar
+  renderSetsBar();
+
+  // Serve indicators
+  document.getElementById('serve-t1').classList.toggle('active', state.serving === 1);
+  document.getElementById('serve-t2').classList.toggle('active', state.serving === 2);
+}
+
+function renderGames(elId, myGames, oppGames, team) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  const maxGames = 7;
+  for (let i = 0; i < maxGames; i++) {
+    const bubble = document.createElement('div');
+    bubble.className = 'game-bubble';
+    if (i < myGames) bubble.classList.add(`won-t${team}`);
+    bubble.textContent = i < myGames ? myGames : '';
+    if (i === 0) bubble.textContent = myGames; // show score in first bubble
+    if (i > 0) bubble.style.display = 'none'; // only show filled
+    el.appendChild(bubble);
+  }
+
+  // simpler: just show score pills for each past game
+  el.innerHTML = '';
+  state.setScores.forEach(s => {
+    const score = team === 1 ? s.t1 : s.t2;
+    const oppScore = team === 1 ? s.t2 : s.t1;
+    const bubble = document.createElement('div');
+    bubble.className = 'game-bubble';
+    bubble.classList.add(score > oppScore ? `won-t${team}` : `won-t${team === 1 ? 2 : 1}`);
+    bubble.textContent = score;
+    el.appendChild(bubble);
+  });
+
+  // current set games
+  const currBubble = document.createElement('div');
+  currBubble.className = 'game-bubble';
+  currBubble.textContent = myGames;
+  if (myGames > oppGames) currBubble.classList.add(`won-t${team}`);
+  el.appendChild(currBubble);
+}
+
+function renderSetsBar() {
+  const bar = document.getElementById('sets-bar');
+  bar.innerHTML = '';
+  const total = state.maxSets;
+  for (let i = 0; i < total; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'set-pip';
+    const s = state.setScores[i];
+    if (s) {
+      if (s.t1 > s.t2) {
+        pip.classList.add('won-t1');
+        pip.textContent = `${s.t1}–${s.t2}`;
+      } else {
+        pip.classList.add('won-t2');
+        pip.textContent = `${s.t1}–${s.t2}`;
+      }
+    } else if (i === state.setScores.length) {
+      pip.classList.add('active');
+      pip.textContent = `Set ${i + 1}`;
+    } else {
+      pip.textContent = `Set ${i + 1}`;
+    }
+    bar.appendChild(pip);
+  }
+}
+
+// ── Winner ───────────────────────────────────────────────────────────────
+function showWinner(t) {
+  const name = t === 0 ? state.t1name : state.t2name;
+  document.getElementById('winner-name').textContent = name;
+
+  const scoreEl = document.getElementById('final-score-display');
+  scoreEl.innerHTML = '';
+  state.setScores.forEach(s => {
+    const chip = document.createElement('div');
+    chip.className = 'final-set-chip';
+    const t1won = s.t1 > s.t2;
+    chip.style.background = t1won ? 'rgba(196,96,26,0.12)' : 'rgba(45,106,79,0.12)';
+    chip.style.color = t1won ? 'var(--clay-dark)' : 'var(--court-green)';
+    chip.textContent = `${s.t1}–${s.t2}`;
+    scoreEl.appendChild(chip);
+  });
+
+  document.getElementById('winner-screen').classList.add('visible');
+}
+
+function resetAll() {
+  document.getElementById('winner-screen').classList.remove('visible');
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'block';
+  document.getElementById('history-list').innerHTML = '<div style="font-size:13px;color:#aaa;text-align:center;padding:8px">No points yet — start playing!</div>';
+}
+
+function resetSamePlayers() {
+  document.getElementById('winner-screen').classList.remove('visible');
+  document.getElementById('history-list').innerHTML = '<div style="font-size:13px;color:#aaa;text-align:center;padding:8px">No points yet — start playing!</div>';
+  const t1name = state.t1name;
+  const t2name = state.t2name;
+  const deuceMode = state.deuceMode;
+  initState(state.maxSets, deuceMode, t1name, t2name);
+  document.getElementById('undo-btn').disabled = true;
+  render();
+}
+
+function confirmNewMatch() {
+  if (confirm('End the current match?')) resetAll();
+}
+</script>
+</body>
+</html>

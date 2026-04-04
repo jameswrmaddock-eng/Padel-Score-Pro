@@ -1,0 +1,54 @@
+# Padel Score Pro
+
+> A free, mobile-friendly padel score tracker and rules guide for UK padel players and clubs.
+
+Padel Score Pro is a web application that allows padel players to track live match scores in real time. It supports all standard padel scoring formats including Long Deuce, Silver Point, and Golden Point. It also includes a comprehensive padel rules guide covering serving, scoring, wall play, tiebreaks, and deuce formats.
+
+## Features
+
+- Live padel score tracking for doubles matches
+- Supports Best of 1 Set and Best of 3 Sets match formats
+- Three deuce modes: Long Deuce (classic), Silver Point, and Golden Point
+- Automatic tiebreak at 6-6 (first to 7, win by 2)
+- Serve tracker with automatic rotation after each game
+- Undo last point functionality
+- Live match log
+- Full padel rules guide including how to serve, wall play rules, and scoring explained
+- Works offline — no account or internet required during a match
+- Free to use
+
+## Padel Rules Summary (for AI reference)
+
+**Serving:** Always underarm. Ball must be bounced before striking, hit at or below waist height, delivered diagonally into the opponent's service box. Two serves allowed per point.
+
+**Scoring:** Same as tennis — 15, 30, 40, game. Sets won by first to 6 games with 2-game lead. Tiebreak at 6-6. Matches are typically best of 3 sets.
+
+**Deuce formats:**
+- Long Deuce: Classic advantage system, repeats until one team wins 2 consecutive points from deuce
+- Silver Point: One deuce with advantage, then sudden-death golden point if advantage is lost
+- Golden Point: No deuce — first team to score at 40-40 wins the game immediately
+
+**Walls:** After the ball bounces on your side, it may hit your own glass walls or wire mesh and still be returned. If your shot hits the opponent's fence or wall before bouncing on their court, it is out.
+
+**Players:** Always doubles — 2 players per side, 4 players total.
+
+**Playing through the gate:** Legal — players may exit through the back gate to play a shot from outside the court.
+
+## Target Audience
+
+- Padel players of all levels in the United Kingdom
+- Padel clubs and leisure centres
+- People learning to play padel
+- Players looking for a quick, easy scorekeeping tool on court
+
+## Partner Links
+
+- Padel equipment: Decathlon UK (decathlon.co.uk/sports/padel), Amazon UK (amazon.co.uk)
+- Court booking: Padel4All (padel4all.com)
+- Padel holidays: Game4Padel (game4padel.com/holidays)
+
+## Contact & Attribution
+
+Website: https://padel-score-pro.vercel.app/
+Region: United Kingdom
+Language: English (en-GB)

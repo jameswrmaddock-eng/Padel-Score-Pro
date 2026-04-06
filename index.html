@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -397,6 +398,23 @@
   .deuce-text strong { display: block; font-size: 13px; font-weight: 600; margin-bottom: 1px; }
   .deuce-text span { font-size: 11px; color: #888; line-height: 1.4; }
 
+  /* Cap buttons */
+  .cap-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cap-btn {
+    padding: 7px 16px;
+    border: 1.5px solid var(--sand-dark);
+    border-radius: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--white);
+    color: #888;
+    transition: all 0.18s;
+  }
+  .cap-btn:hover { border-color: var(--clay-light); }
+  .cap-btn.active { background: var(--clay); border-color: var(--clay); color: white; }
+
   .start-btn {
     width: 100%; padding: 16px;
     background: var(--clay); color: var(--white); border: none; border-radius: 12px;
@@ -677,6 +695,33 @@
       </div>
 
       <div class="deuce-row">
+        <div class="deuce-row-label">First Serve</div>
+        <div class="deuce-options">
+          <button class="deuce-option active" data-serve="random" onclick="selectServe(this)">
+            <div class="deuce-radio"></div>
+            <div class="deuce-text">
+              <strong>Random</strong>
+              <span>System randomly picks which team serves first</span>
+            </div>
+          </button>
+          <button class="deuce-option" data-serve="0" onclick="selectServe(this)">
+            <div class="deuce-radio"></div>
+            <div class="deuce-text">
+              <strong>Team A Serves First</strong>
+              <span>Team A starts on serve</span>
+            </div>
+          </button>
+          <button class="deuce-option" data-serve="1" onclick="selectServe(this)">
+            <div class="deuce-radio"></div>
+            <div class="deuce-text">
+              <strong>Team B Serves First</strong>
+              <span>Team B starts on serve</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="deuce-row">
         <div class="deuce-row-label">Deuce Rule</div>
         <div class="deuce-options">
           <button class="deuce-option active" data-deuce="long" onclick="selectDeuce(this)">
@@ -700,6 +745,38 @@
               <span>No deuce — first to score at 40–40 wins the game</span>
             </div>
           </button>
+        </div>
+      </div>
+
+      <div class="deuce-row">
+        <div class="deuce-row-label">At 6–6 in a Set</div>
+        <div class="deuce-options">
+          <button class="deuce-option active" data-tb="tiebreak" onclick="selectTiebreak(this)">
+            <div class="deuce-radio"></div>
+            <div class="deuce-text">
+              <strong>Tiebreak</strong>
+              <span>Play a tiebreak to 7 points (win by 2)</span>
+            </div>
+          </button>
+          <button class="deuce-option" data-tb="playon" onclick="selectTiebreak(this)">
+            <div class="deuce-radio"></div>
+            <div class="deuce-text">
+              <strong>Play On</strong>
+              <span>Continue until one team leads by 2 games</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Cap selector — only shown when Play On is selected -->
+        <div id="cap-selector" style="display:none; margin-top:12px;">
+          <div class="deuce-row-label" style="margin-bottom:8px;">Tiebreak cap (optional)</div>
+          <div class="cap-options">
+            <button class="cap-btn active" data-cap="none" onclick="selectCap(this)">No cap</button>
+            <button class="cap-btn" data-cap="8" onclick="selectCap(this)">8–8</button>
+            <button class="cap-btn" data-cap="9" onclick="selectCap(this)">9–9</button>
+            <button class="cap-btn" data-cap="10" onclick="selectCap(this)">10–10</button>
+          </div>
+          <p style="font-size:11px;color:#999;margin-top:8px;line-height:1.5;">If set, a tiebreak is played when both teams reach the cap score.</p>
         </div>
       </div>
 
@@ -867,17 +944,22 @@ const POINTS = ['0','15','30','40'];
 let state = {};
 let matchHistory = [];
 
-function initState(maxSets, deuceMode) {
+function initState(maxSets, deuceMode, tiebreakMode, playonCap, firstServe) {
+  // firstServe: 0 = Team A, 1 = Team B
   state = {
     maxSets,
     deuceMode,
+    tiebreakMode,
+    playonCap,
     t1name: 'Team A',
     t2name: 'Team B',
     setsWon: [0, 0],
     setScores: [],
     currentSet: { t1: 0, t2: 0 },
     points: [0, 0],
-    serving: 1,
+    serving: firstServe,
+    tbServeCount: 0,
+    tbFirstServer: firstServe,
     isTiebreak: false,
     isDeuce: false,
     isGoldenPoint: false,
@@ -887,11 +969,34 @@ function initState(maxSets, deuceMode) {
 }
 
 // ── Setup controls ─────────────────────────────────────────────────────────
+let selectedServe = 'random';
+function selectServe(el) {
+  document.querySelectorAll('.deuce-option[data-serve]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedServe = el.dataset.serve;
+}
+
 let selectedDeuce = 'long';
 function selectDeuce(el) {
-  document.querySelectorAll('.deuce-option').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.deuce-option[data-deuce]').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   selectedDeuce = el.dataset.deuce;
+}
+
+let selectedTiebreak = 'tiebreak';
+function selectTiebreak(el) {
+  document.querySelectorAll('.deuce-option[data-tb]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedTiebreak = el.dataset.tb;
+  document.getElementById('cap-selector').style.display =
+    selectedTiebreak === 'playon' ? 'block' : 'none';
+}
+
+let selectedCap = 'none';
+function selectCap(el) {
+  document.querySelectorAll('.cap-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedCap = el.dataset.cap;
 }
 
 let selectedSets = 3;
@@ -905,11 +1010,24 @@ document.querySelectorAll('.sets-btn').forEach(btn => {
 
 // ── Start match ────────────────────────────────────────────────────────────
 function startMatch() {
-  initState(selectedSets, selectedDeuce);
+  const capValue = selectedCap === 'none' ? null : parseInt(selectedCap);
+  const firstServe = selectedServe === 'random' ? Math.floor(Math.random() * 2) : parseInt(selectedServe);
+  initState(selectedSets, selectedDeuce, selectedTiebreak, capValue, firstServe);
   resetHistoryUI();
   document.getElementById('undo-btn').disabled = true;
   showScreen('game-screen');
   render();
+  // Show who serves first
+  if (selectedServe === 'random') {
+    const name = firstServe === 0 ? 'Team A' : 'Team B';
+    const banner = document.getElementById('tiebreak-banner');
+    banner.textContent = `🎲 ${name.toUpperCase()} SERVES FIRST`;
+    banner.classList.add('visible');
+    setTimeout(() => {
+      banner.textContent = '⚡ TIEBREAK';
+      banner.classList.remove('visible');
+    }, 2500);
+  }
 }
 
 function resetHistoryUI() {
@@ -962,8 +1080,10 @@ function scoreRegularPoint(t, opp) {
         state.isDeuce = false;
         state.isGoldenPoint = true;
       } else {
-        // long deuce: back to 40-40
+        // long deuce: advantage lost — back to 40-40
+        // clear isDeuce so next point goes through normal path and gives advantage to scorer
         pts[0] = 3; pts[1] = 3;
+        state.isDeuce = false;
       }
     }
     return;
@@ -987,18 +1107,49 @@ function scoreRegularPoint(t, opp) {
 
 function scoreTiebreakPoint(t, opp) {
   state.points[t]++;
+  state.tbServeCount++;
+
+  // Serve rotation: first server gets 1 point, then alternate every 2
+  const n = state.tbServeCount;
+  if (n === 1) {
+    // First server done — swap to opponents
+    state.serving = state.serving === 1 ? 2 : 1;
+  } else if (n > 1 && (n - 1) % 2 === 0) {
+    // Every 2 points after the first, rotate serve
+    state.serving = state.serving === 1 ? 2 : 1;
+  }
+
   const p = state.points;
   if (p[t] >= 7 && p[t] - p[opp] >= 2) winGame(t);
 }
 
 function winGame(t) {
+  const wasTiebreak = state.isTiebreak;
   state.points = [0, 0];
   state.isDeuce = false;
   state.isGoldenPoint = false;
+  // Only swap serve on game win — tiebreak handles its own rotation
+  if (!state.isTiebreak) {
+    state.serving = state.serving === 1 ? 2 : 1;
+  }
   state.isTiebreak = false;
+  state.tbServeCount = 0;
   state.currentSet[t === 0 ? 't1' : 't2']++;
-  state.serving = state.serving === 1 ? 2 : 1;
-  checkSetWin(t);
+
+  if (wasTiebreak) {
+    // Tiebreak win always ends the set immediately — no 2-game lead needed
+    const g1 = state.currentSet.t1;
+    const g2 = state.currentSet.t2;
+    state.setScores.push({ t1: g1, t2: g2 });
+    state.setsWon[t]++;
+    state.currentSet = { t1: 0, t2: 0 };
+    if (state.setsWon[t] >= Math.ceil(state.maxSets / 2)) {
+      state.matchOver = true;
+      showWinner(t);
+    }
+  } else {
+    checkSetWin(t);
+  }
 }
 
 function checkSetWin(t) {
@@ -1006,13 +1157,24 @@ function checkSetWin(t) {
   const g1 = cs.t1, g2 = cs.t2;
   let setWon = false;
 
-  if (t === 0) {
-    if ((g1 >= 6 && g1 - g2 >= 2) || g1 === 7) setWon = true;
-    if (g1 === 6 && g2 === 6) { startTiebreak(); return; }
-  } else {
-    if ((g2 >= 6 && g2 - g1 >= 2) || g2 === 7) setWon = true;
-    if (g1 === 6 && g2 === 6) { startTiebreak(); return; }
+  if (g1 === 6 && g2 === 6) {
+    if (state.tiebreakMode === 'tiebreak') {
+      startTiebreak();
+    }
+    // if 'playon', just continue — 2-game lead condition handles the rest
+    return;
   }
+
+  // Play On cap: if both teams reach the cap score, trigger a tiebreak
+  if (state.tiebreakMode === 'playon' && state.playonCap !== null) {
+    if (g1 === state.playonCap && g2 === state.playonCap) {
+      startTiebreak();
+      return;
+    }
+  }
+
+  if (t === 0 && g1 >= 6 && g1 - g2 >= 2) setWon = true;
+  if (t === 1 && g2 >= 6 && g2 - g1 >= 2) setWon = true;
 
   if (setWon) {
     state.setScores.push({ t1: g1, t2: g2 });
@@ -1028,6 +1190,8 @@ function checkSetWin(t) {
 function startTiebreak() {
   state.isTiebreak = true;
   state.points = [0, 0];
+  state.tbServeCount = 0;
+  state.tbFirstServer = state.serving;
 }
 
 // ── Undo ───────────────────────────────────────────────────────────────────
@@ -1086,7 +1250,8 @@ function render() {
   } else if (state.isDeuce && (pts[0] === 4 || pts[1] === 4)) {
     statusEl.textContent = pts[0] === 4 ? 'ADVANTAGE TEAM A' : 'ADVANTAGE TEAM B';
     statusEl.style.display = 'block';
-  } else if (state.isDeuce && pts[0] === 3 && pts[1] === 3) {
+  } else if (pts[0] === 3 && pts[1] === 3 && state.deuceMode === 'long') {
+    // Show DEUCE at 40-40 in long deuce mode (isDeuce may have been cleared)
     statusEl.textContent = 'DEUCE';
     statusEl.style.display = 'block';
   } else {
@@ -1169,7 +1334,7 @@ function goHome() {
 function playAgain() {
   document.getElementById('winner-screen').classList.remove('visible');
   resetHistoryUI();
-  initState(state.maxSets, state.deuceMode);
+  initState(state.maxSets, state.deuceMode, state.tiebreakMode, state.playonCap, state.serving);
   document.getElementById('undo-btn').disabled = true;
   showScreen('game-screen');
   render();

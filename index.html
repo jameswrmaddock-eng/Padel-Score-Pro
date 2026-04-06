@@ -827,7 +827,6 @@
 
     <div class="action-row">
       <button class="action-btn undo-btn" id="undo-btn" onclick="undoPoint()" disabled>↩ Undo</button>
-      <button class="action-btn" onclick="toggleServe()">🎯 Swap Serve</button>
       <button class="action-btn danger" onclick="confirmNewMatch()">✕ End</button>
     </div>
 
@@ -1112,10 +1111,10 @@ function scoreTiebreakPoint(t, opp) {
   const n = state.tbServeCount;
   if (n === 1) {
     // First server done — swap to opponents
-    state.serving = state.serving === 1 ? 2 : 1;
+    state.serving = state.serving === 0 ? 1 : 0;
   } else if (n > 1 && (n - 1) % 2 === 0) {
     // Every 2 points after the first, rotate serve
-    state.serving = state.serving === 1 ? 2 : 1;
+    state.serving = state.serving === 0 ? 1 : 0;
   }
 
   const p = state.points;
@@ -1129,7 +1128,7 @@ function winGame(t) {
   state.isGoldenPoint = false;
   // Only swap serve on game win — tiebreak handles its own rotation
   if (!state.isTiebreak) {
-    state.serving = state.serving === 1 ? 2 : 1;
+    state.serving = state.serving === 0 ? 1 : 0;
   }
   state.isTiebreak = false;
   state.tbServeCount = 0;
@@ -1203,7 +1202,7 @@ function undoPoint() {
 
 // ── Toggle serve ───────────────────────────────────────────────────────────
 function toggleServe() {
-  state.serving = state.serving === 1 ? 2 : 1;
+  state.serving = state.serving === 0 ? 1 : 0;
   render();
 }
 
@@ -1265,8 +1264,8 @@ function render() {
 
   renderSetsBar();
 
-  document.getElementById('serve-t1').classList.toggle('active', state.serving === 1);
-  document.getElementById('serve-t2').classList.toggle('active', state.serving === 2);
+  document.getElementById('serve-t1').classList.toggle('active', state.serving === 0);
+  document.getElementById('serve-t2').classList.toggle('active', state.serving === 1);
 }
 
 function renderGames(elId, myGames, oppGames, team) {
